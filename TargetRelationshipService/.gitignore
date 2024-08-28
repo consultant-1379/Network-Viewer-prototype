@@ -1,0 +1,25 @@
+# Eclipse files
+.settings
+.project
+.classpath
+# Idea files
+.idea/
+*.iml
+# PMD
+.pmd
+# Compiled source
+*.class
+*/bin/*
+# Packages
+*.jar
+*.war
+*.ear
+# Maven build files
+target
+reports
+# ARQ tests
+arq-perf
+# Merge files
+*.orig
+# Backup files in Linux
+*.*~

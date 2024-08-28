@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>TargetRelationshipService-testsuite</artifactId>
+        <groupId>com.ericsson.oss.services</groupId>
+        <version>1.0.1-SNAPSHOT</version>
+    </parent>
+    <artifactId>TargetRelationshipService-testsuite-jee</artifactId>
+    <name>[${project.parent.artifactId}] TestSuite JEE</name>
+
+    <properties>
+        <!-- Docker properties -->
+        <docker.jboss.username>root</docker.jboss.username>
+        <docker.jboss.password>shroot</docker.jboss.password>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>TargetRelationshipService-api</artifactId>
+            <version>1.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>TargetRelationshipService-jar</artifactId>
+            <version>1.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>TargetRelationshipService-ejb</artifactId>
+            <version>1.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.oss.itpf.sdk</groupId>
+            <artifactId>sdk-config-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- added because of problems with javax.jee -->
+        <dependency>
+            <groupId>org.jboss.spec</groupId>
+            <artifactId>jboss-javaee-6.0</artifactId>
+            <version>1.0.0.Final</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Rest client -->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+        </dependency>
+
+        <!-- Cucumber tests -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>info.cukes</groupId>
+            <artifactId>cucumber-groovy</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>info.cukes</groupId>
+            <artifactId>cucumber-junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+         <profile>
+            <id>docker</id>
+             <!-- Allows activation of profile using 'mvn verify -Dts' (ts stands for test suite) -->
+             <activation>
+                 <property>
+                     <name>ts</name>
+                 </property>
+             </activation>
+
+             <dependencies>
+                 <!-- Artifact to be deployed by jboss-as-maven-plugin.
+                      This may be replaced by CI's testrunner script at a later date.-->
+                 <!--<dependency>
+                     <groupId>com.ericsson.oss.services</groupId>
+                     <artifactId>TargetRelationshipService-ear</artifactId>
+                     <version>${project.parent.version}</version>
+                     <type>ear</type>
+                     <scope>test</scope>
+                 </dependency>-->
+             </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- Deploy the artifact defined in profile/dependencies to docker jboss instance.
+                             This may be replaced by CI's testrunner script at a later date. -->
+                        <groupId>org.jboss.as.plugins</groupId>
+                        <artifactId>jboss-as-maven-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                            <username>${docker.jboss.username}</username>
+                            <password>${docker.jboss.password}</password>
+                            <force>true</force>
+                            <timeout>10000</timeout>
+                            <targetDir>../../TargetRelationshipService-ear/target</targetDir>
+                            <filename>TargetRelationshipService-ear-${project.version}.ear</filename>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>install-topology-relationship-ear</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <!-- Run the groovy based integration tests during the integration-test phase -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.19</version>
+                        <configuration>
+                            <skip>false</skip>
+                            <skipTests>false</skipTests>
+                            <skipITs>false</skipITs>
+                            <skipITs>false</skipITs>
+                            <includes>
+                                <!-- Pick up RunAllTest.groovy file -->
+                                <include>**/*Test.java</include>
+                            </includes>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>run-topology-relationship-service-integration-tests</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>verify-topology-relationship-service-integration-tests</id>
+                                <goals>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+
+                <!-- This overrides the values in the maven-resources-plugin -->
+                <testResources>
+                    <testResource>
+                        <directory>src/test/resources</directory>
+                        <filtering>true</filtering>
+                        <includes>
+                            <include>**/*</include>
+                        </includes>
+                    </testResource>
+                </testResources>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- Compiles all the groovy code in test-compile phase -->
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.4</version>
+                <configuration>
+                    <providerSelection>2.0</providerSelection>
+                    <source />
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.gmaven.runtime</groupId>
+                        <artifactId>gmaven-runtime-2.0</artifactId>
+                        <version>1.4</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>org.codehaus.groovy</groupId>
+                                <artifactId>groovy-all</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.codehaus.groovy</groupId>
+                        <artifactId>groovy-all</artifactId>
+                        <version>${version.groovy-all}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
+                <!-- This plugin exists to prevent surefire running and failing in the test phase.
+                     Tests will be run in 'docker' profile using the failsafe plugin -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
